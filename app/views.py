@@ -4,10 +4,14 @@ Jinja2 Documentation:    https://jinja.palletsprojects.com/
 Werkzeug Documentation:  https://werkzeug.palletsprojects.com/
 This file creates your application.
 """
-
-from app import app
 from flask import render_template, request, jsonify, send_file
+from flask import current_app as app
+from app.forms import MovieForm
+from app.models import Movie
+from app import db
+from werkzeug.utils import secure_filename
 import os
+from datetime import datetime
 
 
 ###
@@ -17,6 +21,44 @@ import os
 @app.route('/')
 def index():
     return jsonify(message="This is the beginning of our API")
+
+@app.route('/api/v1/movies', methods=['POST'])
+def movies():
+    form = MovieForm()
+    form.csrf_token.data = request.headers.get('X-CSRFToken')  # Try to get CSRF token from header
+    
+    if form.validate_on_submit():
+        # Get the file data
+        poster = form.poster.data
+        filename = secure_filename(poster.filename)
+        
+        # Create uploads folder if it doesn't exist
+        if not os.path.exists(app.config['UPLOAD_FOLDER']):
+            os.makedirs(app.config['UPLOAD_FOLDER'])
+        
+        # Save the file
+        poster.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        
+        # Create new movie record
+        movie = Movie(
+            title=form.title.data,
+            description=form.description.data,
+            poster=filename,
+            created_at=datetime.utcnow()
+        )
+        
+        # Save to database
+        db.session.add(movie)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Movie Successfully added",
+            "title": movie.title,
+            "poster": movie.poster,
+            "description": movie.description
+        })
+    
+    return jsonify({"errors": form_errors(form)})
 
 
 ###
