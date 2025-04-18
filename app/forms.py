@@ -5,6 +5,9 @@ from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms.validators import DataRequired, Length
 
 class MovieForm(FlaskForm):
+    class Meta:
+        csrf = False  # Disable CSRF for this form
+
     title = StringField('Movie Title', validators=[
         DataRequired(message='Please enter a movie title'),
         Length(min=1, max=100, message='Title must be between 1 and 100 characters')

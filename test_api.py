@@ -2,15 +2,11 @@ import requests
 import os
 
 # Base URL of your API
-BASE_URL = "http://localhost:5000"
+BASE_URL = "http://localhost:8080"
 
 def test_movie_upload(image_path, title, description):
     """Test the movie upload endpoint with an image file"""
     url = f"{BASE_URL}/api/v1/movies"
-    
-    # First, get the CSRF token
-    response = requests.get(BASE_URL)
-    csrf_token = response.cookies.get('csrf_token')
     
     # Prepare the data
     files = {
@@ -18,24 +14,25 @@ def test_movie_upload(image_path, title, description):
     }
     data = {
         'title': title,
-        'description': description,
-        'csrf_token': csrf_token
-    }
-    headers = {
-        'X-CSRFToken': csrf_token
+        'description': description
     }
     
     try:
         # Make the POST request
-        response = requests.post(url, files=files, data=data, headers=headers, cookies=response.cookies)
+        response = requests.post(url, files=files, data=data)
         
         # Print the response
         print(f"\nTesting with image: {os.path.basename(image_path)}")
         print("Status Code:", response.status_code)
-        print("Response:", response.json())
+        print("Response Text:", response.text)  # Print raw response text
+        try:
+            print("Response JSON:", response.json())
+        except:
+            print("Could not parse response as JSON")
         
     except Exception as e:
         print(f"Error: {str(e)}")
+        print(f"Error type: {type(e)}")
     finally:
         # Close the file
         files['poster'].close()
